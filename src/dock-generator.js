@@ -6,7 +6,7 @@ import fs from 'fs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-function transformDockElement(original) {
+export function transformDockElement(original) {
 	const { geometry, properties } = original;
 	const { coordinates } = geometry;
 	const [lng, lat] = coordinates;
