@@ -22,7 +22,7 @@ function calcCrow(lat1, lng1, lat2, lng2) {
 function gatherDistances(docks) {
 	const dockMap = {};
 	const routeMap = {};
-	docks.forEach((dock1, idx) => {
+	docks.forEach((dock1) => {
 		dockMap[dock1.station_id] = dock1;
 		docks.forEach(dock2 => {
 			if (dock1.station_id !== dock2.station_id) {
