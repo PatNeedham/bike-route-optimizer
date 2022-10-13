@@ -15,6 +15,7 @@ export default async function handler(req, res) {
   if (req.query.token !== DOCK_REFRESH_API_KEY) {
     return res.status(403).json({ error: 'unauthorized' });
   }
+  console.log('authorized dock-refresh request');
 
   
   const uri = `mongodb+srv://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_ENDPOINT}/?retryWrites=true&w=majority`;
@@ -24,6 +25,7 @@ export default async function handler(req, res) {
       console.log('mongo connection error: ', err);
       return res.status(400);
     }
+    console.log('connected to Mongo client');
     const collection = client.db("nyc-docks").collection("latest");
     // perform actions on the collection object
     const count = await collection.estimatedDocumentCount();
@@ -39,7 +41,9 @@ export default async function handler(req, res) {
 
     const latest = client.db('nyc-docks').collection('latest')
     await latest.deleteMany('*');
+    console.log('just finished deleteMany command...');
     await latest.insertMany(docks);
+    console.log('just finished insertMany command...');
     
     client.close();
     res.status(200).json({ name: 'John Doe' })
