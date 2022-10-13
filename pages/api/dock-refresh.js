@@ -40,7 +40,7 @@ export default async function handler(req, res) {
     await newCollection.insertMany(docks);
 
     const latest = client.db('nyc-docks').collection('latest')
-    await latest.deleteMany('*');
+    await latest.deleteMany({});
     console.log('just finished deleteMany command...');
     await latest.insertMany(docks);
     console.log('just finished insertMany command...');
