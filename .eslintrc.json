@@ -3,6 +3,7 @@
   "plugins": ["unused-imports"],
   "rules": {
     "no-unused-vars": "error",
+    "no-undef": "error",
     "unused-imports/no-unused-imports": "error"
   }
 }
