@@ -23,6 +23,13 @@ const getDockBackgroundColor = (action) => {
   }
 };
 
+const getDockOpacity = (points) => {
+  if (!points) {
+    return 1;
+  }
+  return points / 4;
+};
+
 const DockComponent = ({
   id,
   name,
@@ -48,10 +55,11 @@ const DockComponent = ({
     <>
       <div
         style={{
-          height: 5,
-          width: 5,
+          height: 7,
+          width: 7,
           cursor: "pointer",
           backgroundColor: getDockBackgroundColor(bike_angels_action),
+          opacity: getDockOpacity(bike_angels_points),
         }}
         onClick={handleClick}
       />
