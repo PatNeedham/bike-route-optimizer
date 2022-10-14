@@ -9,4 +9,8 @@ jobs:
       - name: Call dock-refresh API route to update the DB
         run: |
           curl --request GET \
-          --url 'https://www.bikerouteoptimizer.com/api/dock-refresh?token=${{ secrets.DOCK_REFRESH_API_KEY }}'
+          --url 'https://www.bikerouteoptimizer.com/api/dock-refresh?token=${{ secrets.DOCK_REFRESH_API_KEY }}' > $HOME/response.json
+          echo "collection name from response: $(jq -r '.collection' $HOME/response.json)"
+          curl --request GET \
+          --url 'https://www.bikerouteoptimizer.com/api/dock-refresh?token=${{ secrets.DOCK_REFRESH_API_KEY }}&collection=$(jq -r '.collection' $HOME/response.json)'
+          
