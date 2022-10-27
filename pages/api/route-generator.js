@@ -1,7 +1,5 @@
 import axios from "axios";
 
-import routeDistances from "../../data/routeDistances.json";
-
 export const getPointsEarned = (dock1, dock2) => {
   if (
     dock1.bike_angels_action === "give" ||
@@ -48,6 +46,11 @@ export default async function handler(req, res) {
     );
     const pointValues = response.data.documents;
     // console.log("keys in pointValues: ", Object.keys(pointValues));
+
+    const routeDistancesResponse = await axios.get(
+      "https://github.com/PatNeedham/bike-route-optimizer/blob/main/data/routeDistances.json?raw=true"
+    );
+    const routeDistances = routeDistancesResponse.data;
 
     const routes = [];
     let skippedDueToDistance = 0;
