@@ -1,4 +1,4 @@
-import { MongoClient, ServerApiVersion } from "mongodb";
+import axios from "axios";
 
 import routeDistances from "../../data/routeDistances.json";
 
@@ -12,42 +12,50 @@ export const getPointsEarned = (dock1, dock2) => {
   return dock1.bike_angels_points + dock2.bike_angels_points;
 };
 
-const { DOCK_REFRESH_API_KEY, MONGO_USERNAME, MONGO_PASSWORD, MONGO_ENDPOINT } =
-  process.env;
+const {
+  DOCK_REFRESH_API_KEY,
+  MONGO_SERVERLESS_PROJECT_ID,
+  MONGO_SERVERLESS_API_KEY,
+} = process.env;
+
+const BASE_URI = `https://data.mongodb-api.com/app/${MONGO_SERVERLESS_PROJECT_ID}/endpoint/data/v1/action`;
 
 export default async function handler(req, res) {
   if (req.query.token !== DOCK_REFRESH_API_KEY) {
     return res.status(403).json({ error: "unauthorized" });
   }
   console.log("authorized dock-refresh request");
-  const { collection: collectionName } = req.query;
-  if (!collectionName) {
-    return res.status(400).json({ error: "missing collection name" });
+  const { timestamp } = req.query;
+  if (!timestamp) {
+    return res.status(400).json({ error: "missing timestamp" });
   }
 
-  const uri = `mongodb+srv://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_ENDPOINT}/?retryWrites=true&w=majority`;
-  const client = new MongoClient(uri, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    serverApi: ServerApiVersion.v1,
-  });
-  client.connect(async (err) => {
-    if (err) {
-      console.log("mongo connection error: ", err);
-      return res.status(400);
-    }
-
-    const latest = client.db("nyc-docks").collection("latest");
-    const all = latest.find({});
-    const docks = await all.toArray();
+  try {
+    const response = await axios.post(
+      `${BASE_URI}/find`,
+      {
+        dataSource: "BikeRouteOptimizer",
+        database: "nyc-docks",
+        collection: "point-values",
+        filter: { timestamp },
+      },
+      {
+        headers: {
+          "content-type": "application/json",
+          "api-key": MONGO_SERVERLESS_API_KEY,
+        },
+      }
+    );
+    const pointValues = response.data.documents;
+    // console.log("keys in pointValues: ", Object.keys(pointValues));
 
     const routes = [];
     let skippedDueToDistance = 0;
     let skippedDueToPoints = 0;
     let skippedToDuePonitsPerDistance = 0;
     console.log("beginning O(n^2) operation...");
-    docks.forEach((dock1) => {
-      docks.forEach((dock2) => {
+    pointValues.forEach((dock1) => {
+      pointValues.forEach((dock2) => {
         if (dock1.station_id !== dock2.station_id) {
           const pointsEarned = getPointsEarned(dock1, dock2);
           if (pointsEarned > 0) {
@@ -62,6 +70,9 @@ export default async function handler(req, res) {
                   points: pointsEarned,
                   distance,
                   points_per_distance: pointsPerDistance,
+                  timestamp,
+                  dock1_location: dock1.location,
+                  dock2_location: dock2.location,
                 });
               } else {
                 skippedToDuePonitsPerDistance += 1;
@@ -79,11 +90,22 @@ export default async function handler(req, res) {
     console.log("completed O(n^2) operation");
     console.log(`routes.length: ${routes.length}`);
 
-    const newCollection = await client
-      .db("nyc-routes")
-      .createCollection(collectionName);
+    await axios.post(
+      `${BASE_URI}/insertMany`,
+      {
+        dataSource: "BikeRouteOptimizer",
+        database: "nyc-docks",
+        collection: "routes",
+        documents: routes,
+      },
+      {
+        headers: {
+          "content-type": "application/json",
+          "api-key": MONGO_SERVERLESS_API_KEY,
+        },
+      }
+    );
 
-    await newCollection.insertMany(routes);
     console.log("finished insertMany");
     return res.status(200).json({
       skippedDueToDistance,
@@ -91,5 +113,8 @@ export default async function handler(req, res) {
       skippedToDuePonitsPerDistance,
       routesInserted: routes.length,
     });
-  });
+  } catch (err) {
+    console.log("mongo connection error: ", err);
+    return res.status(400);
+  }
 }

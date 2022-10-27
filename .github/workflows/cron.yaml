@@ -1,7 +1,7 @@
 name: dock-refresh
 on:
   schedule:
-    - cron: '*/15 * * * *'
+    - cron: '*/10 * * * *'
 jobs:
   cron:
     runs-on: ubuntu-latest
@@ -10,7 +10,7 @@ jobs:
         run: |
           curl --request GET \
           --url 'https://www.bikerouteoptimizer.com/api/dock-refresh?token=${{ secrets.DOCK_REFRESH_API_KEY }}' > $HOME/response.json
-          echo "collection name from response: $(jq -r '.collection' $HOME/response.json)"
+          echo "timestamp from response: $(jq -r '.timestamp' $HOME/response.json)"
           curl --request GET \
-          --url 'https://www.bikerouteoptimizer.com/api/dock-refresh?token=${{ secrets.DOCK_REFRESH_API_KEY }}&collection=$(jq -r '.collection' $HOME/response.json)'
+          --url 'https://www.bikerouteoptimizer.com/api/route-generator?token=${{ secrets.DOCK_REFRESH_API_KEY }}&timestamp=$(jq -r '.timestamp' $HOME/response.json)'
           

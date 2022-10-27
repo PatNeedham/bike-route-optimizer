@@ -1,23 +1,39 @@
-import { MongoClient, ServerApiVersion } from 'mongodb';
+import axios from "axios";
 
-const {
-  MONGO_USERNAME,
-  MONGO_PASSWORD,
-  MONGO_ENDPOINT
-} = process.env;
+const { MONGO_SERVERLESS_API_KEY, MONGO_SERVERLESS_PROJECT_ID } = process.env;
+
+const axiosConfig = {
+  headers: {
+    "content-type": "application/json",
+    "api-key": MONGO_SERVERLESS_API_KEY,
+  },
+};
 
 export default async function handler(req, res) {
-  const uri = `mongodb+srv://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_ENDPOINT}/?retryWrites=true&w=majority`;
-  const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
-  client.connect(async (err) => {
-    if (err) {
-      console.log('mongo connection error: ', err);
-      return res.status(400);
-    }
+  const latestRefresh = await axios.post(
+    `https://data.mongodb-api.com/app/${MONGO_SERVERLESS_PROJECT_ID}/endpoint/data/v1/action/find`,
+    {
+      dataSource: "BikeRouteOptimizer",
+      database: "nyc-docks",
+      collection: "refresh-times",
+      sort: { timestamp: -1 },
+      limit: 1,
+    },
+    axiosConfig
+  );
 
-    const latest = client.db('nyc-docks').collection('latest');
-    const all = latest.find({});
-    const docks = await all.toArray();
-    return res.status(200).json(docks);
-  });
+  const { timestamp } = latestRefresh.data.documents[0];
+
+  const pointValues = await axios.post(
+    `https://data.mongodb-api.com/app/${MONGO_SERVERLESS_PROJECT_ID}/endpoint/data/v1/action/find`,
+    {
+      dataSource: "BikeRouteOptimizer",
+      database: "nyc-docks",
+      collection: "point-values",
+      filter: { timestamp },
+    },
+    axiosConfig
+  );
+
+  return res.status(200).json(pointValues.data);
 }

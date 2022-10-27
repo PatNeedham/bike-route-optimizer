@@ -6,9 +6,9 @@ import { useQuery } from "@tanstack/react-query";
 
 const { NEXT_PUBLIC_GOOGLE_MAPS_API_KEY } = process.env;
 
-const useDocks = () => {
+const useRoutes = () => {
   return useQuery(["docks"], async () => {
-    const { data } = await axios.get("/api/latest");
+    const { data } = await axios.get("/api/routes");
     return data;
   });
 };
@@ -23,22 +23,14 @@ const getDockBackgroundColor = (action) => {
   }
 };
 
-const getDockOpacity = (points) => {
-  if (!points) {
-    return 1;
-  }
-  return points / 4;
-};
-
-const DockComponent = ({ docAttributes }) => {
-  const {
-    id,
-    name,
-    bikes_available,
-    docks_available,
-    bike_angels_action,
-    bike_angels_points,
-  } = docAttributes;
+const DockComponent = ({
+  id,
+  name,
+  bikes_available,
+  docks_available,
+  bike_angels_action,
+  bike_angels_points,
+}) => {
   const [anchorEl, setAnchorEl] = React.useState(null);
 
   const handleClick = (event) => {
@@ -60,7 +52,6 @@ const DockComponent = ({ docAttributes }) => {
           width: 7,
           cursor: "pointer",
           backgroundColor: getDockBackgroundColor(bike_angels_action),
-          opacity: getDockOpacity(bike_angels_points),
         }}
         onClick={handleClick}
       />
@@ -91,7 +82,7 @@ const MapContainer = () => {
     center: { lat: 40.7128, lng: -74.006 },
     zoom: 11,
   };
-  const { data } = useDocks();
+  const { data } = useRoutes();
 
   return (
     <div style={{ height: "100vh", width: "100%" }}>
@@ -101,14 +92,7 @@ const MapContainer = () => {
         defaultZoom={defaultProps.zoom}
       >
         {data?.length > 0 ? (
-          data.map((d) => (
-            <DockComponent
-              key={d.id}
-              docAttributes={d}
-              lat={d.location.coordinates[1]}
-              lng={d.location.coordinates[0]}
-            />
-          ))
+          data.map((d) => <DockComponent key={d.id} {...d} />)
         ) : (
           <p>loading...</p>
         )}
