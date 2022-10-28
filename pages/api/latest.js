@@ -35,5 +35,5 @@ export default async function handler(req, res) {
     axiosConfig
   );
 
-  return res.status(200).json(pointValues.data);
+  return res.status(200).json(pointValues.data.documents);
 }

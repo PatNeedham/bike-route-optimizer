@@ -1,103 +1,91 @@
-import React from "react";
-import GoogleMapReact from "google-map-react";
-import axios from "axios";
-import Popover from "@mui/material/Popover";
+import React, { useState, useEffect } from "react";
+import { GoogleMap, LoadScript, Polyline } from "@react-google-maps/api";
 import { useQuery } from "@tanstack/react-query";
 
 const { NEXT_PUBLIC_GOOGLE_MAPS_API_KEY } = process.env;
+const center = { lat: 40.7128, lng: -74.006 };
+const style = { height: "100vh", width: "100%" };
 
-const useRoutes = () => {
-  return useQuery(["docks"], async () => {
-    const { data } = await axios.get("/api/routes");
-    return data;
-  });
+export const startSymbol = {
+  path: "M -2,-2 2,2 M 2,-2 -2,2",
+  strokeColor: "#7CFC00",
+  strokeWeight: 4,
 };
 
-const getDockBackgroundColor = (action) => {
-  if (!action) {
-    return "gray";
-  } else if (action === "take") {
-    return "green";
-  } else {
-    return "red";
-  }
-};
-
-const DockComponent = ({
-  id,
-  name,
-  bikes_available,
-  docks_available,
-  bike_angels_action,
-  bike_angels_points,
-}) => {
-  const [anchorEl, setAnchorEl] = React.useState(null);
-
-  const handleClick = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-
-  const open = Boolean(anchorEl);
-  const popoverId = open ? `${id}-popover` : undefined;
-
-  return (
-    <>
-      <div
-        style={{
-          height: 7,
-          width: 7,
-          cursor: "pointer",
-          backgroundColor: getDockBackgroundColor(bike_angels_action),
-        }}
-        onClick={handleClick}
-      />
-      <Popover
-        id={popoverId}
-        open={open}
-        anchorEl={anchorEl}
-        onClose={handleClose}
-        anchorOrigin={{
-          vertical: "bottom",
-          horizontal: "left",
-        }}
-      >
-        <div style={{ padding: 15 }}>
-          <h3>{name}</h3>
-          <p>Bikes available: {bikes_available}</p>
-          <p>Docks available: {docks_available}</p>
-          <p>Action: {bike_angels_action}</p>
-          <p>Points available: {bike_angels_points}</p>
-        </div>
-      </Popover>
-    </>
-  );
+export const endSymbol = {
+  path: "M -2,-2 2,2 M 2,-2 -2,2",
+  strokeColor: "#FF0000",
+  strokeWeight: 4,
 };
 
 const MapContainer = () => {
-  const defaultProps = {
-    center: { lat: 40.7128, lng: -74.006 },
-    zoom: 11,
-  };
-  const { data } = useRoutes();
+  const [dockMap, setDockMap] = useState({});
+  const {
+    data: routes,
+    isLoading,
+    isFetched,
+  } = useQuery(["routes"], () =>
+    fetch("/api/routes").then((res) => res.json())
+  );
 
+  const { data: docks, isFetched: fetchedDocks } = useQuery(["docks"], () =>
+    fetch("/api/latest").then((res) => res.json())
+  );
+
+  useEffect(() => {
+    if (fetchedDocks) {
+      const newDockMap = {};
+      docks.forEach((dock) => {
+        newDockMap[dock.station_id] = dock;
+      });
+      setDockMap(newDockMap);
+    }
+  }, [fetchedDocks]);
   return (
-    <div style={{ height: "100vh", width: "100%" }}>
-      <GoogleMapReact
-        bootstrapURLKeys={{ key: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }}
-        defaultCenter={defaultProps.center}
-        defaultZoom={defaultProps.zoom}
+    <LoadScript googleMapsApiKey={NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}>
+      <GoogleMap mapContainerStyle={style} center={center} zoom={11}>
+        {!isLoading &&
+          isFetched &&
+          routes.map((route) => (
+            <Polyline
+              key={route._id}
+              options={{
+                strokeColor: "#D3D3D3",
+                icons: [
+                  { icon: startSymbol, offset: "0%" },
+                  { icon: endSymbol, offset: "100%" },
+                ],
+              }}
+              path={[
+                {
+                  lat: route.dock1_location.coordinates[1],
+                  lng: route.dock1_location.coordinates[0],
+                },
+                {
+                  lat: route.dock2_location.coordinates[1],
+                  lng: route.dock2_location.coordinates[0],
+                },
+              ]}
+              onClick={(polyline) => {
+                console.log("first arg: ", polyline);
+                console.log(polyline.latLng.lat());
+              }}
+            />
+          ))}
+      </GoogleMap>
+      <div
+        style={{
+          width: "calc(100vw - 70px)",
+          height: 75,
+          backgroundColor: "white",
+          position: "absolute",
+          left: 0,
+          bottom: 0,
+        }}
       >
-        {data?.length > 0 ? (
-          data.map((d) => <DockComponent key={d.id} {...d} />)
-        ) : (
-          <p>loading...</p>
-        )}
-      </GoogleMapReact>
-    </div>
+        <span>Info nav bar...</span>
+      </div>
+    </LoadScript>
   );
 };
 
