@@ -11,6 +11,9 @@ jobs:
           curl --request GET \
           --url 'https://www.bikerouteoptimizer.com/api/dock-refresh?token=${{ secrets.DOCK_REFRESH_API_KEY }}' > $HOME/response.json
           echo "timestamp from response: $(jq -r '.timestamp' $HOME/response.json)"
+          echo "TIMESTAMP=$(jq -r '.timestamp' $HOME/response.json)" >> $GITHUB_ENV
+      - name: Call route-generator API
+        run: |
           curl --request GET \
-          --url 'https://www.bikerouteoptimizer.com/api/route-generator?token=${{ secrets.DOCK_REFRESH_API_KEY }}&timestamp=$(jq -r '.timestamp' $HOME/response.json)'
+          --url 'https://www.bikerouteoptimizer.com/api/route-generator?token=${{ secrets.DOCK_REFRESH_API_KEY }}&timestamp=${{ env.TIMESTAMP }}'
           
