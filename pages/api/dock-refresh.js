@@ -39,7 +39,6 @@ export default async function handler(req, res) {
     },
     axiosConfig
   );
-  console.log("result.data: ", result.data);
   const insertedIdCount = result.data?.insertedIds?.length;
   await axios.post(
     `https://data.mongodb-api.com/app/${MONGO_SERVERLESS_PROJECT_ID}/endpoint/data/v1/action/insertOne`,
