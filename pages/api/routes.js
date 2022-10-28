@@ -10,19 +10,27 @@ const axiosConfig = {
 };
 
 export default async function handler(req, res) {
-  const latestRefresh = await axios.post(
-    `https://data.mongodb-api.com/app/${MONGO_SERVERLESS_PROJECT_ID}/endpoint/data/v1/action/find`,
-    {
-      dataSource: "BikeRouteOptimizer",
-      database: "nyc-docks",
-      collection: "refresh-times",
-      sort: { timestamp: -1 },
-      limit: 1,
-    },
-    axiosConfig
-  );
+  let timestamp;
 
-  const { timestamp } = latestRefresh.data.documents[0];
+  if (req.query.timestamp) {
+    timestamp = req.query.timestamp;
+  } else {
+    const latestRefresh = await axios.post(
+      `https://data.mongodb-api.com/app/${MONGO_SERVERLESS_PROJECT_ID}/endpoint/data/v1/action/find`,
+      {
+        dataSource: "BikeRouteOptimizer",
+        database: "nyc-docks",
+        collection: "refresh-times",
+        sort: { timestamp: -1 },
+        limit: 1,
+      },
+      axiosConfig
+    );
+
+    timestamp = latestRefresh.data.documents[0].timestamp;
+  }
+
+  console.log("timestamp here: ", timestamp);
 
   const routes = await axios.post(
     `https://data.mongodb-api.com/app/${MONGO_SERVERLESS_PROJECT_ID}/endpoint/data/v1/action/find`,

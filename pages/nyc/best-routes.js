@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { GoogleMap, LoadScript, Polyline } from "@react-google-maps/api";
 import { useQuery } from "@tanstack/react-query";
 
@@ -19,7 +19,7 @@ export const endSymbol = {
 };
 
 const MapContainer = () => {
-  const [dockMap, setDockMap] = useState({});
+  // const [dockMap, setDockMap] = useState({});
   const {
     data: routes,
     isLoading,
@@ -28,19 +28,23 @@ const MapContainer = () => {
     fetch("/api/routes").then((res) => res.json())
   );
 
-  const { data: docks, isFetched: fetchedDocks } = useQuery(["docks"], () =>
-    fetch("/api/latest").then((res) => res.json())
+  // const { data: docks, isFetched: fetchedDocks } = useQuery(["docks"], () =>
+  //   fetch("/api/latest").then((res) => res.json())
+  // );
+
+  const { data: timestamps = [] } = useQuery(["timestamps"], () =>
+    fetch("/api/timestamps").then((res) => res.json())
   );
 
-  useEffect(() => {
-    if (fetchedDocks) {
-      const newDockMap = {};
-      docks.forEach((dock) => {
-        newDockMap[dock.station_id] = dock;
-      });
-      setDockMap(newDockMap);
-    }
-  }, [fetchedDocks]);
+  // useEffect(() => {
+  //   if (fetchedDocks) {
+  //     const newDockMap = {};
+  //     docks.forEach((dock) => {
+  //       newDockMap[dock.station_id] = dock;
+  //     });
+  //     setDockMap(newDockMap);
+  //   }
+  // }, [fetchedDocks]);
   return (
     <LoadScript googleMapsApiKey={NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}>
       <GoogleMap mapContainerStyle={style} center={center} zoom={11}>
@@ -83,7 +87,10 @@ const MapContainer = () => {
           bottom: 0,
         }}
       >
-        <span>Info nav bar...</span>
+        <span>Available timestamps from past:</span>
+        {timestamps.map((timestamp) => (
+          <p key={timestamp}>{timestamp}</p>
+        ))}
       </div>
     </LoadScript>
   );
